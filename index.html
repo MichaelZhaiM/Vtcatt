@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出席率計算器 Pro Plus - 智能多科目管理系統</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            transition: background 0.3s ease;
+        }
+
+        body.dark-mode {
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+        }
+
+        body.dark-mode .container {
+            background: #16213e;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .section {
+            background: #0f3460;
+            border-color: #2a5298;
+        }
+
+        body.dark-mode .section h2 {
+            color: #64b5f6;
+        }
+
+        body.dark-mode .form-group label,
+        body.dark-mode .result-label {
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .form-group input,
+        body.dark-mode .form-group select {
+            background: #1a1a2e;
+            color: #e0e0e0;
+            border-color: #2a5298;
+        }
+
+        body.dark-mode .ocr-result {
+            background: #1a1a2e;
+            color: #e0e0e0;
+            border-color: #2a5298;
+        }
+
+        body.dark-mode .punchcard-entry {
+            background: #1a1a2e !important;
+        }
+
+        body.dark-mode table th {
+            background: #0f3460;
+        }
+
+        body.dark-mode .course-btn {
+            background: #1a1a2e;
+            border-color: #2a5298;
+            color: #e0e0e0;
+        }
+
+        body.dark-mode .course-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        body.dark-mode .multi-course-nav {
+            background: #0f3460;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            transition: background 0.3s ease;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .multi-course-nav {
+            display: flex;
+            gap: 10px;
+            padding: 15px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            overflow-x: auto;
+            flex-wrap: wrap;
+        }
+
+        .course-btn {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+        }
+
+        .course-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .course-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .course-btn.new-course-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border-color: #28a745;
+        }
+
+        .course-btn.delete-course-btn {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            border-color: #dc3545;
+            padding: 8px 12px;
+            font-size: 0.8em;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 40px;
+        }
+
+        @media (max-width: 1024px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .section:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.15);
+        }
+
+        .section h2 {
+            color: #667eea;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            color: #333;
+            width: 100%;
+        }
+
+        .btn-secondary:hover {
+            background: #dee2e6;
+        }
+
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 0.9em;
+            margin: 5px 5px 5px 0;
+            display: inline-block;
+            width: auto;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #138496;
+        }
+
+        .results {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 5px solid #667eea;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 0.95em;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .result-value {
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 15px 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 0.9em;
+            transition: width 0.5s ease;
+        }
+
+        .progress-fill.warning {
+            background: linear-gradient(90deg, #ff9800 0%, #f57c00 100%);
+        }
+
+        .progress-fill.danger {
+            background: linear-gradient(90deg, #f44336 0%, #d32f2f 100%);
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+        }
+
+        .alert-info {
+            background: #e3f2fd;
+            border-color: #2196f3;
+            color: #1565c0;
+        }
+
+        .alert-success {
+            background: #e8f5e9;
+            border-color: #4caf50;
+            color: #2e7d32;
+        }
+
+        .alert-warning {
+            background: #fff3e0;
+            border-color: #ff9800;
+            color: #e65100;
+        }
+
+        .alert-danger {
+            background: #ffebee;
+            border-color: #f44336;
+            color: #c62828;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            background: #f0f4ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .file-upload-area:hover {
+            background: #e8ecff;
+            border-color: #764ba2;
+        }
+
+        .file-upload-area.active {
+            background: #e8ecff;
+            border-color: #764ba2;
+        }
+
+        .file-upload-area input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .ocr-result {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.9em;
+            color: #666;
+            white-space: pre-wrap;
+            word-break: break-word;
+            transition: background 0.3s ease;
+        }
+
+        .suggestion {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 12px 15px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #999;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95em;
+        }
+
+        table th,
+        table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        table th {
+            background: #f0f4ff;
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .input-group-small {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .input-group-small input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.95em;
+        }
+
+        .attendance-method-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .method-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            background: white;
+            color: #333;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .method-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .simulator-section {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #17a2b8;
+        }
+
+        body.dark-mode .simulator-section {
+            background: #0f3460;
+        }
+
+        .punchcard-entry {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 4px solid #667eea;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 8px;
+            align-items: center;
+            transition: background 0.3s ease;
+        }
+
+        .risk-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 15px;
+            text-align: center;
+            display: none;
+            z-index: 999;
+        }
+
+        .risk-banner.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+
+        .risk-banner.critical {
+            background: #f44336;
+            color: white;
+        }
+
+        .risk-banner.warning {
+            background: #ff9800;
+            color: white;
+        }
+
+        @media print {
+            .theme-toggle,
+            .btn,
+            .tabs,
+            .attendance-method-tabs,
+            .file-upload-area,
+            .multi-course-nav {
+                display: none !important;
+            }
+
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+                max-width: 100%;
+            }
+
+            .content {
+                grid-template-columns: 1fr;
+                padding: 20px;
+            }
+
+            .section {
+                page-break-inside: avoid;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="risk-banner" id="riskBanner"></div>
+    <div class="container">
+        <div class="header">
+            <button class="theme-toggle" onclick="toggleDarkMode()" title="切換暗黑模式">🌙</button>
+            <h1>📚 出席率計算器 Pro Plus</h1>
+            <p>智能多科目管理系統 - 自訂門檻、多科追蹤、智能模擬</p>
+        </div>
+
+        <!-- 多科目導航 -->
+        <div class="multi-course-nav" id="courseNav" style="display: none;">
+            <!-- 動態科目按鈕 -->
+        </div>
+
+        <div class="content">
+            <!-- 左欄：課程資訊輸入 -->
+            <div>
+                <div class="section">
+                    <h2>📋 步驟1: 輸入課程資訊</h2>
+
+                    <div class="tabs">
+                        <button class="tab-btn active" onclick="switchTab('method1')">方法A: 上傳文件</button>
+                        <button class="tab-btn" onclick="switchTab('method2')">方法B: 課表時間</button>
+                        <button class="tab-btn" onclick="switchTab('method3')">方法C: 簡易輸入</button>
+                    </div>
+
+                    <!-- 方法A: OCR上傳 -->
+                    <div id="method1" class="tab-content active">
+                        <div class="file-upload-area" id="dropZone">
+                            <div class="file-upload-icon">📄</div>
+                            <p style="margin: 10px 0; font-weight: 600;">拖曳PDF/圖片到此 或 點擊選擇</p>
+                            <p style="font-size: 0.9em; color: #666; margin: 0;">支持格式: PDF, JPG, PNG, GIF</p>
+                            <input type="file" id="fileInput" accept=".pdf,image/*">
+                        </div>
+
+                        <div class="loading" id="loading">
+                            <div class="spinner"></div>
+                            <p>正在識別文字... 請稍候</p>
+                        </div>
+
+                        <div id="ocrResult" style="display: none;">
+                            <h3 style="color: #667eea; margin-bottom: 10px;">📝 識別結果:</h3>
+                            <div class="ocr-result" id="ocrText"></div>
+                            <button class="btn btn-secondary" onclick="parseOCR()">解析識別結果</button>
+                        </div>
+                    </div>
+
+                    <!-- 方法B: 課表時間 -->
+                    <div id="method2" class="tab-content">
+                        <div class="form-group">
+                            <label>科目名稱</label>
+                            <input type="text" id="courseNameB" placeholder="例: 藥理學概論" value="藥理學概論">
+                        </div>
+
+                        <div class="form-group">
+                            <label>課堂數目</label>
+                            <select id="numClasses" onchange="generateClassInputs()" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1em;">
+                                <option value="">-- 選擇課堂數目 --</option>
+                                <option value="1">1堂</option>
+                                <option value="2">2堂</option>
+                                <option value="3">3堂</option>
+                                <option value="4">4堂</option>
+                                <option value="5">5堂</option>
+                                <option value="6">6堂</option>
+                                <option value="7">7堂</option>
+                                <option value="8">8堂</option>
+                                <option value="9">9堂</option>
+                                <option value="10">10堂</option>
+                                <option value="11">11堂</option>
+                                <option value="12">12堂</option>
+                                <option value="13">13堂</option>
+                                <option value="14">14堂</option>
+                                <option value="15">15堂</option>
+                                <option value="16">16堂</option>
+                                <option value="17">17堂</option>
+                                <option value="18">18堂</option>
+                                <option value="19">19堂</option>
+                                <option value="20">20堂</option>
+                                <option value="21">21堂</option>
+                                <option value="22">22堂</option>
+                                <option value="23">23堂</option>
+                                <option value="24">24堂</option>
+                                <option value="25">25堂</option>
+                                <option value="26">26堂</option>
+                                <option value="27">27堂</option>
+                                <option value="28">28堂</option>
+                                <option value="29">29堂</option>
+                                <option value="30">30堂</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>快速套用時間 (套用到所有課堂)</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end;">
+                                <div>
+                                    <label style="font-size: 0.85em; color: #666; display: block; margin-bottom: 5px;">開始時間</label>
+                                    <input type="time" id="quickStartTime" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 0.95em;">
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.85em; color: #666; display: block; margin-bottom: 5px;">結束時間</label>
+                                    <input type="time" id="quickEndTime" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 0.95em;">
+                                </div>
+                                <button type="button" class="btn btn-success btn-small" onclick="applyQuickTime()" style="width: auto; padding: 10px 15px;">⚡ 套用</button>
+                            </div>
+                        </div>
+
+                        <div id="courseScheduleList" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
+                            <!-- 動態課程時間 -->
+                        </div>
+
+                        <button class="btn btn-primary" onclick="submitCourseSchedule()">✅ 確認課程時間表</button>
+                    </div>
+
+                    <!-- 方法C: 簡易輸入 -->
+                    <div id="method3" class="tab-content">
+                        <div class="form-group">
+                            <label>科目名稱</label>
+                            <input type="text" id="courseNameC" placeholder="例: 藥理學概論" value="藥理學概論">
+                        </div>
+
+                        <div class="form-group">
+                            <label>課程總時數 (小時)</label>
+                            <input type="number" id="totalHoursInput" placeholder="例: 52" value="52" min="1" step="0.5">
+                        </div>
+
+                        <div class="form-group">
+                            <label>出席率門檻 (%) <span style="font-size: 0.8em; color: #667eea; font-weight: 600;">預設: 70%</span></label>
+                            <input type="number" id="thresholdInput" placeholder="例: 60, 70, 80" value="70" min="0" max="100" step="1">
+                        </div>
+
+                        <button class="btn btn-primary" onclick="submitSimpleCourse()">✅ 確認課程資訊</button>
+                    </div>
+                </div>
+
+                <!-- 課程統計 -->
+                <div class="section" style="margin-top: 20px;">
+                    <h2>📊 課程統計</h2>
+                    <div id="courseStats" style="display: none;">
+                        <div class="form-group">
+                            <label>⚙️ 編輯出席率門檻</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="number" id="editThreshold" placeholder="輸入門檻 %" min="0" max="100" step="1" style="flex: 1;">
+                                <button class="btn btn-info btn-small" onclick="updateThreshold()" style="width: auto; padding: 10px 15px;">🔄 更新</button>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table>
+                                <tbody id="courseStatsTable"></tbody>
+                            </table>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-box">
+                                <div class="stat-value" id="totalHoursDisplay">0</div>
+                                <div class="stat-label">總時數</div>
+                            </div>
+                            <div class="stat-box">
+                                <div class="stat-value" id="requiredDisplay">0</div>
+                                <div class="stat-label" id="requiredLabel">70%所需</div>
+                            </div>
+                        </div>
+                        <div class="alert alert-info">
+                            <strong>💡 提示:</strong> <span id="thresholdTip">70%</span>出席率是最低要求。請確保出席時數達到上述標準。
+                        </div>
+                    </div>
+                    <div id="noStats" style="color: #999; text-align: center; padding: 20px;">
+                        請先輸入課程資訊
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右欄：出席率計算 -->
+            <div>
+                <div class="section">
+                    <h2>✅ 步驟2: 輸入出席情況</h2>
+
+                    <div id="attendanceMethodSection" style="display: none;">
+                        <div class="attendance-method-tabs">
+                            <button class="method-btn active" onclick="switchAttendanceMethod('direct')">📝 直接輸入</button>
+                            <button class="method-btn" onclick="switchAttendanceMethod('punchcard')">⏰ 打卡追蹤</button>
+                        </div>
+
+                        <!-- 方法1: 直接輸入時數 -->
+                        <div id="directMethod" class="method-content">
+                            <div class="form-group">
+                                <label>已出席時數</label>
+                                <div class="input-group-small">
+                                    <input type="number" id="attendHours" placeholder="小時" value="42" min="0">
+                                    <input type="number" id="attendMins" placeholder="分鐘" value="0" min="0" max="59">
+                                </div>
+                            </div>
+
+                            <button class="btn btn-primary" onclick="calculateAttendanceDirect()">🧮 計算出席率</button>
+                        </div>
+
+                        <!-- 方法2: 打卡追蹤 -->
+                        <div id="punchcardMethod" class="method-content" style="display: none;">
+                            <h3 style="color: #667eea; margin-bottom: 15px; font-size: 1em;">📍 每堂課打卡記錄</h3>
+                            
+                            <div style="background: #e8f4f8; padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #17a2b8; font-size: 0.9em;">
+                                <strong>💡 部分出席支援:</strong> 遲到／早退會自動計算為部分出席
+                            </div>
+
+                            <div id="punchcardList" style="max-height: 300px; overflow-y: auto; margin-bottom: 15px; background: white; border-radius: 8px;">
+                                <!-- 動態打卡記錄 -->
+                            </div>
+
+                            <button class="btn btn-secondary" onclick="addPunchcardEntry()">➕ 添加打卡記錄</button>
+                            <button class="btn btn-primary" onclick="calculateAttendancePunchcard()">✅ 計算出席率</button>
+                        </div>
+                    </div>
+
+                    <div id="noAttendanceInput" style="color: #999; text-align: center; padding: 20px;">
+                        請先完成步驟1
+                    </div>
+                </div>
+
+                <!-- 出席率結果 -->
+                <div class="section" style="margin-top: 20px;">
+                    <h2>📈 出席率分析</h2>
+                    <div id="attendanceResults" style="display: none;">
+                        <div class="alert" id="statusAlert"></div>
+
+                        <div class="results">
+                            <div class="result-item">
+                                <span class="result-label">已出席時數:</span>
+                                <span class="result-value" id="totalAttendHours">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">出席率:</span>
+                                <span class="result-value" id="attendanceRate">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label"><span id="thresholdLabel">70%</span>所需時數:</span>
+                                <span class="result-value" id="requiredHours">-</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">距離<span id="thresholdLabel2">70%</span>:</span>
+                                <span class="result-value" id="attendanceDifference">-</span>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 20px;">
+                            <label style="color: #666; font-weight: 600; margin-bottom: 10px; display: block;">出席率進度:</label>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressBar" style="width: 0%;">0%</div>
+                            </div>
+                        </div>
+
+                        <div class="suggestion" id="suggestion"></div>
+
+                        <div style="margin-top: 20px; padding: 15px; background: #f0f4ff; border-radius: 8px;">
+                            <h3 style="color: #667eea; margin-bottom: 10px; font-size: 1.1em;">📋 缺席計劃</h3>
+                            <div id="absenceAdvice" style="line-height: 1.8; font-size: 0.95em;"></div>
+                        </div>
+
+                        <!-- 出席模擬器 -->
+                        <div class="simulator-section">
+                            <h3 style="color: #17a2b8; margin-bottom: 10px; font-size: 1em;">🔮 出席率模擬器</h3>
+                            <p style="font-size: 0.9em; margin-bottom: 10px; color: #666;">預測：如果之後再缺席 X 堂課，最後出席率會變成多少？</p>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="number" id="simulateAbsence" placeholder="輸入堂數" min="0" value="1" style="flex: 1; padding: 10px; border: 2px solid #17a2b8; border-radius: 8px; font-size: 0.95em;">
+                                <button class="btn btn-info btn-small" onclick="simulateAttendance()" style="width: auto; padding: 10px 15px;">📊 模擬</button>
+                            </div>
+                            <div id="simulateResult" style="display: none; margin-top: 10px; padding: 12px; background: white; border-radius: 8px; border-left: 4px solid #17a2b8; font-size: 0.9em;">
+                                <!-- 模擬結果 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="noResults" style="color: #999; text-align: center; padding: 20px;">
+                        請先輸入出席情況
+                    </div>
+                </div>
+
+                <!-- 控制按鈕 -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="resetCurrentCourse()" style="margin-bottom: 0;">🔄 重置當前科目</button>
+                    <button class="btn btn-info" onclick="window.print()" style="margin-bottom: 0;">📄 列印報告</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === 全局數據結構 ===
+        let allCourses = [];
+        let currentCourseIndex = 0;
+        let courseData = null;
+        let attendanceData = null;
+        let courseSchedules = [];
+        let punchcardEntries = [];
+        let customThreshold = 70;
+
+        // === 主題控制 ===
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDark ? 'true' : 'false');
+        }
+
+        window.addEventListener('load', () => {
+            const darkMode = localStorage.getItem('darkMode') === 'true';
+            if (darkMode) document.body.classList.add('dark-mode');
+            
+            loadFromLocalStorage();
+            addPunchcardEntry();
+        });
+
+        // === LocalStorage 管理 ===
+        function saveToLocalStorage() {
+            const dataToSave = {
+                allCourses: allCourses,
+                currentCourseIndex: currentCourseIndex
+            };
+            localStorage.setItem('attendanceCourses', JSON.stringify(dataToSave));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('attendanceCourses');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    allCourses = data.allCourses || [];
+                    currentCourseIndex = data.currentCourseIndex || 0;
+                    
+                    if (allCourses.length > 0) {
+                        loadCourseData(currentCourseIndex);
+                        updateCourseNav();
+                    }
+                } catch (e) {
+                    console.log('讀取本地數據失敗，開始新的');
+                }
+            }
+        }
+
+        function loadCourseData(index) {
+            if (index >= allCourses.length) return;
+            
+            const course = allCourses[index];
+            courseData = course.courseData || null;
+            attendanceData = course.attendanceData || null;
+            courseSchedules = course.schedules || [];
+            punchcardEntries = course.punchcardEntries || [];
+            customThreshold = course.threshold || 70;
+            
+            if (courseData) {
+                displayCourseStats();
+                showAttendanceInput();
+                if (attendanceData) {
+                    displayAttendanceResults();
+                }
+            }
+        }
+
+        // === 多科目管理 ===
+        function updateCourseNav() {
+            const nav = document.getElementById('courseNav');
+            if (allCourses.length === 0) {
+                nav.style.display = 'none';
+                return;
+            }
+            nav.style.display = 'flex';
+            nav.innerHTML = '';
+
+            allCourses.forEach((course, index) => {
+                const btn = document.createElement('button');
+                btn.className = `course-btn ${index === currentCourseIndex ? 'active' : ''}`;
+                const rate = course.attendanceData ? course.attendanceData.attendanceRate.toFixed(1) : '0';
+                btn.textContent = `${course.courseData?.name || '未命名'} (${rate}%)`;
+                btn.onclick = () => switchCourse(index);
+                nav.appendChild(btn);
+            });
+
+            const addBtn = document.createElement('button');
+            addBtn.className = 'course-btn new-course-btn';
+            addBtn.textContent = '➕ 新增科目';
+            addBtn.onclick = addNewCourse;
+            nav.appendChild(addBtn);
+
+            if (allCourses.length > 1) {
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'course-btn delete-course-btn';
+                deleteBtn.textContent = '❌ 刪除';
+                deleteBtn.onclick = () => deleteCurrentCourse();
+                nav.appendChild(deleteBtn);
+            }
+        }
+
+        function switchCourse(index) {
+            currentCourseIndex = index;
+            loadCourseData(index);
+            saveToLocalStorage();
+            updateCourseNav();
+        }
+
+        function addNewCourse() {
+            const courseName = prompt('請輸入新科目名稱:');
+            if (courseName) {
+                allCourses.push({
+                    courseData: null,
+                    attendanceData: null,
+                    schedules: [],
+                    punchcardEntries: [],
+                    threshold: 70
+                });
+                currentCourseIndex = allCourses.length - 1;
+                resetCurrentCourse();
+                saveToLocalStorage();
+                updateCourseNav();
+            }
+        }
+
+        function deleteCurrentCourse() {
+            if (allCourses.length <= 1) {
+                alert('至少要保留一個科目');
+                return;
+            }
+            if (confirm('確定要刪除當前科目嗎？')) {
+                allCourses.splice(currentCourseIndex, 1);
+                currentCourseIndex = Math.min(currentCourseIndex, allCourses.length - 1);
+                loadCourseData(currentCourseIndex);
+                saveToLocalStorage();
+                updateCourseNav();
+            }
+        }
+
+        function resetCurrentCourse() {
+            courseData = null;
+            attendanceData = null;
+            courseSchedules = [];
+            punchcardEntries = [];
+            customThreshold = 70;
+            document.getElementById('courseStats').style.display = 'none';
+            document.getElementById('noStats').style.display = 'block';
+            document.getElementById('attendanceMethodSection').style.display = 'none';
+            document.getElementById('noAttendanceInput').style.display = 'block';
+            document.getElementById('attendanceResults').style.display = 'none';
+            document.getElementById('noResults').style.display = 'block';
+        }
+
+        // === 文件上傳處理 ===
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('active'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('active'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('active');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                performOCR(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                performOCR(e.target.files[0]);
+            }
+        });
+
+        // === OCR處理 ===
+        async function performOCR(file) {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('ocrResult').style.display = 'none';
+
+            try {
+                const worker = await Tesseract.createWorker('chi_tra+eng');
+                const result = await worker.recognize(file);
+                const text = result.data.text;
+                
+                document.getElementById('ocrText').textContent = text;
+                document.getElementById('ocrResult').style.display = 'block';
+                document.getElementById('loading').style.display = 'none';
+                
+                await worker.terminate();
+            } catch (error) {
+                console.error('OCR Error:', error);
+                alert('OCR識別失敗: ' + error.message);
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function parseOCR() {
+            alert('請手動查看識別結果，然後使用其他方法輸入課程資訊。');
+        }
+
+        // === Tab切換 ===
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function switchAttendanceMethod(method) {
+            document.querySelectorAll('.method-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.method-btn').forEach(el => el.classList.remove('active'));
+            
+            if (method === 'direct') {
+                document.getElementById('directMethod').style.display = 'block';
+            } else {
+                document.getElementById('punchcardMethod').style.display = 'block';
+            }
+            event.target.classList.add('active');
+        }
+
+        // === 方法B: 課表時間 ===
+        function generateClassInputs() {
+            const numClasses = parseInt(document.getElementById('numClasses').value);
+            const list = document.getElementById('courseScheduleList');
+            list.innerHTML = '';
+
+            if (numClasses > 0) {
+                for (let i = 0; i < numClasses; i++) {
+                    const classNum = i + 1;
+                    const timeEntry = document.createElement('div');
+                    timeEntry.className = 'course-time-entry';
+                    timeEntry.style.cssText = 'background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #667eea;';
+                    timeEntry.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h4 style="color: #667eea; margin: 0; font-size: 0.95em;">第${classNum}堂課</h4>
+                            <span style="font-size: 0.85em; color: #667eea; font-weight: 600;">課時: <span id="duration-${i}">-</span></span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <label style="font-size: 0.85em; color: #666; display: block; margin-bottom: 5px;">開始時間</label>
+                                <input type="time" class="course-start-${i}" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 0.9em;">
+                            </div>
+                            <div>
+                                <label style="font-size: 0.85em; color: #666; display: block; margin-bottom: 5px;">結束時間</label>
+                                <input type="time" class="course-end-${i}" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 0.9em;">
+                            </div>
+                        </div>
+                    `;
+                    
+                    list.appendChild(timeEntry);
+                    
+                    document.querySelector(`.course-start-${i}`).addEventListener('change', () => updateCourseDuration(i));
+                    document.querySelector(`.course-end-${i}`).addEventListener('change', () => updateCourseDuration(i));
+                }
+            }
+        }
+
+        function applyQuickTime() {
+            const startTime = document.getElementById('quickStartTime').value;
+            const endTime = document.getElementById('quickEndTime').value;
+            const numClasses = parseInt(document.getElementById('numClasses').value);
+
+            if (!startTime || !endTime) {
+                alert('請輸入開始時間和結束時間');
+                return;
+            }
+
+            if (!numClasses || numClasses === 0) {
+                alert('請先選擇課堂數目');
+                return;
+            }
+
+            const [startH, startM] = startTime.split(':').map(Number);
+            const [endH, endM] = endTime.split(':').map(Number);
+            const startMins = startH * 60 + startM;
+            const endMins = endH * 60 + endM;
+
+            if (endMins <= startMins) {
+                alert('結束時間必須晚於開始時間');
+                return;
+            }
+
+            for (let i = 0; i < numClasses; i++) {
+                document.querySelector(`.course-start-${i}`).value = startTime;
+                document.querySelector(`.course-end-${i}`).value = endTime;
+                updateCourseDuration(i);
+            }
+
+            alert(`✅ 已將時間 ${startTime} - ${endTime} 套用到所有 ${numClasses} 堂課程！`);
+        }
+
+        function updateCourseDuration(index) {
+            const startTime = document.querySelector(`.course-start-${index}`).value;
+            const endTime = document.querySelector(`.course-end-${index}`).value;
+            
+            if (startTime && endTime) {
+                const [startH, startM] = startTime.split(':').map(Number);
+                const [endH, endM] = endTime.split(':').map(Number);
+                
+                const startMins = startH * 60 + startM;
+                const endMins = endH * 60 + endM;
+                
+                if (endMins > startMins) {
+                    const durationMins = endMins - startMins;
+                    const hours = Math.floor(durationMins / 60);
+                    const mins = durationMins % 60;
+                    const durationText = mins > 0 ? `${hours}h${mins}m` : `${hours}h`;
+                    document.getElementById(`duration-${index}`).textContent = durationText;
+                } else {
+                    document.getElementById(`duration-${index}`).textContent = '❌';
+                }
+            }
+        }
+
+        function submitCourseSchedule() {
+            const courseName = document.getElementById('courseNameB').value;
+            const numClasses = parseInt(document.getElementById('numClasses').value);
+
+            if (!courseName || !numClasses) {
+                alert('請輸入科目名稱並選擇課堂數目');
+                return;
+            }
+
+            const entries = document.querySelectorAll('.course-time-entry');
+            courseSchedules = [];
+            let totalHours = 0;
+            let hasError = false;
+
+            entries.forEach((entry, index) => {
+                const startTime = document.querySelector(`.course-start-${index}`).value;
+                const endTime = document.querySelector(`.course-end-${index}`).value;
+                const classNum = index + 1;
+
+                if (!startTime || !endTime) {
+                    alert(`第${classNum}堂課程時間未完整輸入`);
+                    hasError = true;
+                    return;
+                }
+
+                const [startH, startM] = startTime.split(':').map(Number);
+                const [endH, endM] = endTime.split(':').map(Number);
+                
+                const startMins = startH * 60 + startM;
+                const endMins = endH * 60 + endM;
+
+                if (endMins <= startMins) {
+                    alert(`第${classNum}堂課程結束時間必須晚於開始時間`);
+                    hasError = true;
+                    return;
+                }
+
+                const durationMins = endMins - startMins;
+                const hours = durationMins / 60;
+                
+                courseSchedules.push({
+                    classNum: classNum,
+                    startTime: startTime,
+                    endTime: endTime,
+                    durationHours: hours
+                });
+
+                totalHours += hours;
+            });
+
+            if (hasError) return;
+
+            courseData = {
+                name: courseName,
+                totalHours: totalHours,
+                totalSessions: courseSchedules.length,
+                threshold: customThreshold,
+                requiredHours: totalHours * (customThreshold / 100),
+                schedules: courseSchedules,
+                type: 'schedule'
+            };
+
+            allCourses[currentCourseIndex] = {
+                courseData: courseData,
+                attendanceData: null,
+                schedules: courseSchedules,
+                punchcardEntries: [],
+                threshold: customThreshold
+            };
+
+            displayCourseStats();
+            showAttendanceInput();
+            saveToLocalStorage();
+        }
+
+        // === 方法C: 簡易輸入 ===
+        function submitSimpleCourse() {
+            const courseName = document.getElementById('courseNameC').value;
+            const totalHours = parseFloat(document.getElementById('totalHoursInput').value);
+            const threshold = parseFloat(document.getElementById('thresholdInput').value) || 70;
+
+            if (!courseName || !totalHours || totalHours <= 0) {
+                alert('請輸入有效的科目名稱和總時數');
+                return;
+            }
+
+            customThreshold = threshold;
+            courseData = {
+                name: courseName,
+                totalHours: totalHours,
+                totalSessions: 0,
+                threshold: threshold,
+                requiredHours: totalHours * (threshold / 100),
+                type: 'simple'
+            };
+
+            allCourses[currentCourseIndex] = {
+                courseData: courseData,
+                attendanceData: null,
+                schedules: [],
+                punchcardEntries: [],
+                threshold: threshold
+            };
+
+            displayCourseStats();
+            showAttendanceInput();
+            saveToLocalStorage();
+            updateCourseNav();
+        }
+
+        // === 自訂出席門檻 ===
+        function updateThreshold() {
+            const newThreshold = parseFloat(document.getElementById('editThreshold').value);
+            if (isNaN(newThreshold) || newThreshold < 0 || newThreshold > 100) {
+                alert('請輸入 0-100 之間的數值');
+                return;
+            }
+
+            customThreshold = newThreshold;
+            if (courseData) {
+                courseData.threshold = newThreshold;
+                courseData.requiredHours = courseData.totalHours * (newThreshold / 100);
+                
+                allCourses[currentCourseIndex].threshold = newThreshold;
+                allCourses[currentCourseIndex].courseData = courseData;
+            }
+
+            displayCourseStats();
+            if (attendanceData) displayAttendanceResults();
+            saveToLocalStorage();
+            alert(`✅ 出席率門檻已更新為 ${newThreshold}%`);
+        }
+
+        // === 打卡追蹤 ===
+        function addPunchcardEntry() {
+            const index = punchcardEntries.length;
+            const today = new Date().toISOString().split('T')[0];
+            
+            const entry = document.createElement('div');
+            entry.className = 'punchcard-entry';
+            
+            entry.innerHTML = `
+                <div>
+                    <label style="font-size: 0.75em; color: #999;">日期</label>
+                    <input type="date" class="punch-date-${index}" value="${today}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9em;">
+                </div>
+                <div>
+                    <label style="font-size: 0.75em; color: #999;">簽到時間</label>
+                    <input type="time" class="punch-in-${index}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9em;">
+                </div>
+                <div>
+                    <label style="font-size: 0.75em; color: #999;">簽出時間</label>
+                    <input type="time" class="punch-out-${index}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9em;">
+                </div>
+                <button class="btn btn-danger btn-small" onclick="removePunchcardEntry(${index})">🗑️</button>
+            `;
+            
+            document.getElementById('punchcardList').appendChild(entry);
+        }
+
+        function removePunchcardEntry(index) {
+            const entries = document.querySelectorAll('.punchcard-entry');
+            if (entries.length > 0 && entries[index]) {
+                entries[index].remove();
+            }
+        }
+
+        function calculateAttendancePunchcard() {
+            if (!courseData) {
+                alert('請先輸入課程資訊');
+                return;
+            }
+
+            const entries = document.querySelectorAll('.punchcard-entry');
+            let totalAttendHours = 0;
+            punchcardEntries = [];
+
+            entries.forEach((entry, index) => {
+                const date = document.querySelector(`.punch-date-${index}`).value;
+                const inTime = document.querySelector(`.punch-in-${index}`).value;
+                const outTime = document.querySelector(`.punch-out-${index}`).value;
+
+                if (inTime && outTime) {
+                    const [inH, inM] = inTime.split(':').map(Number);
+                    const [outH, outM] = outTime.split(':').map(Number);
+                    
+                    const inMins = inH * 60 + inM;
+                    const outMins = outH * 60 + outM;
+
+                    if (outMins > inMins) {
+                        const durationMins = outMins - inMins;
+                        const hours = durationMins / 60;
+                        
+                        punchcardEntries.push({
+                            date: date,
+                            inTime: inTime,
+                            outTime: outTime,
+                            duration: hours
+                        });
+
+                        totalAttendHours += hours;
+                    }
+                }
+            });
+
+            attendanceData = {
+                totalAttendHours: totalAttendHours,
+                attendanceRate: (totalAttendHours / courseData.totalHours) * 100,
+                difference: courseData.requiredHours - totalAttendHours,
+                method: 'punchcard'
+            };
+
+            allCourses[currentCourseIndex].attendanceData = attendanceData;
+            allCourses[currentCourseIndex].punchcardEntries = punchcardEntries;
+
+            displayAttendanceResults();
+            saveToLocalStorage();
+            updateCourseNav();
+        }
+
+        // === 直接輸入時數 ===
+        function calculateAttendanceDirect() {
+            if (!courseData) {
+                alert('請先輸入課程資訊');
+                return;
+            }
+
+            const hours = parseFloat(document.getElementById('attendHours').value) || 0;
+            const mins = parseFloat(document.getElementById('attendMins').value) || 0;
+
+            const totalAttendHours = hours + mins / 60;
+            attendanceData = {
+                totalAttendHours: totalAttendHours,
+                attendanceRate: (totalAttendHours / courseData.totalHours) * 100,
+                difference: courseData.requiredHours - totalAttendHours,
+                method: 'direct'
+            };
+
+            allCourses[currentCourseIndex].attendanceData = attendanceData;
+
+            displayAttendanceResults();
+            saveToLocalStorage();
+            updateCourseNav();
+        }
+
+        // === 顯示課程統計 ===
+        function displayCourseStats() {
+            if (!courseData) return;
+
+            const statsTable = document.getElementById('courseStatsTable');
+            let tableHTML = '';
+
+            if (courseData.type === 'schedule') {
+                tableHTML = `
+                    <tr style="background: #f0f4ff; font-weight: 700;">
+                        <td>課程名稱</td>
+                        <td colspan="2">${courseData.name}</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">總課堂數</td>
+                        <td colspan="2" style="color: #667eea; font-weight: 700;">${courseData.totalSessions}堂</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">總時數</td>
+                        <td colspan="2" style="color: #667eea; font-weight: 700;">${courseData.totalHours.toFixed(2)}小時</td>
+                    </tr>
+                    <tr style="background: #fff3cd; font-weight: 700;">
+                        <td colspan="2">${customThreshold}%出席率所需</td>
+                        <td style="color: #ff9800;">${courseData.requiredHours.toFixed(2)}小時</td>
+                    </tr>
+                `;
+            } else {
+                tableHTML = `
+                    <tr style="background: #f0f4ff; font-weight: 700;">
+                        <td>課程名稱</td>
+                        <td colspan="2">${courseData.name}</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">總時數</td>
+                        <td colspan="2" style="color: #667eea; font-weight: 700;">${courseData.totalHours.toFixed(2)}小時</td>
+                    </tr>
+                    <tr style="background: #fff3cd; font-weight: 700;">
+                        <td colspan="2">${customThreshold}%出席率所需</td>
+                        <td style="color: #ff9800;">${courseData.requiredHours.toFixed(2)}小時</td>
+                    </tr>
+                `;
+            }
+
+            statsTable.innerHTML = tableHTML;
+            document.getElementById('totalHoursDisplay').textContent = courseData.totalHours.toFixed(2);
+            document.getElementById('requiredDisplay').textContent = courseData.requiredHours.toFixed(2) + '小時';
+            document.getElementById('requiredLabel').textContent = `${customThreshold}%所需`;
+            document.getElementById('thresholdTip').textContent = customThreshold;
+            document.getElementById('editThreshold').value = customThreshold;
+            
+            document.getElementById('courseStats').style.display = 'block';
+            document.getElementById('noStats').style.display = 'none';
+        }
+
+        function showAttendanceInput() {
+            document.getElementById('attendanceMethodSection').style.display = 'block';
+            document.getElementById('noAttendanceInput').style.display = 'none';
+        }
+
+        // === 顯示出席率結果 ===
+        function displayAttendanceResults() {
+            const rate = attendanceData.attendanceRate;
+            const diff = attendanceData.difference;
+            const totalAttend = attendanceData.totalAttendHours;
+            const threshold = customThreshold;
+
+            let statusClass, statusText;
+            if (rate >= threshold) {
+                statusClass = 'alert-success';
+                statusText = `✅ 出席率已達標準! 符合${threshold}%最低要求。`;
+            } else if (rate >= threshold - 10) {
+                statusClass = 'alert-warning';
+                statusText = `⚠️ 警告: 出席率為${rate.toFixed(1)}%，仍需增加出席。`;
+            } else {
+                statusClass = 'alert-danger';
+                statusText = `❌ 危險: 出席率僅${rate.toFixed(1)}%，必須立即增加出席!`;
+            }
+
+            document.getElementById('statusAlert').className = `alert ${statusClass}`;
+            document.getElementById('statusAlert').textContent = statusText;
+
+            document.getElementById('totalAttendHours').textContent = totalAttend.toFixed(2) + '小時';
+            document.getElementById('attendanceRate').textContent = rate.toFixed(1) + '%';
+            document.getElementById('requiredHours').textContent = courseData.requiredHours.toFixed(2) + '小時';
+            document.getElementById('thresholdLabel').textContent = `${threshold}%`;
+            document.getElementById('thresholdLabel2').textContent = `${threshold}%`;
+
+            if (diff > 0) {
+                document.getElementById('attendanceDifference').textContent = `還需 ${diff.toFixed(2)}小時`;
+                document.getElementById('attendanceDifference').style.color = '#dc3545';
+            } else {
+                document.getElementById('attendanceDifference').textContent = `已超標 ${Math.abs(diff).toFixed(2)}小時`;
+                document.getElementById('attendanceDifference').style.color = '#28a745';
+            }
+
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = Math.min(rate, 100) + '%';
+            progressBar.textContent = rate.toFixed(1) + '%';
+
+            progressBar.classList.remove('warning', 'danger');
+            if (rate >= threshold) {
+                // Keep default
+            } else if (rate >= threshold - 10) {
+                progressBar.classList.add('warning');
+            } else {
+                progressBar.classList.add('danger');
+            }
+
+            generateSuggestion();
+
+            // 風險提示
+            if (rate < threshold && diff <= courseData.totalHours * 0.05) {
+                showRiskBanner('critical', `⚠️ 緊急: 出席率 ${rate.toFixed(1)}%，無多少餘地了!`);
+            }
+
+            document.getElementById('attendanceResults').style.display = 'block';
+            document.getElementById('noResults').style.display = 'none';
+        }
+
+        // === 生成建議 ===
+        function generateSuggestion() {
+            let suggestion = '';
+            const rate = attendanceData.attendanceRate;
+            const diff = attendanceData.difference;
+            const threshold = customThreshold;
+            const avgClassHours = courseData.totalHours / Math.max(courseData.totalSessions, 1);
+
+            if (rate >= threshold) {
+                suggestion = `🎉 恭喜! 你的出席率已達${threshold}%的目標。<br><strong>建議:</strong> 繼續保持出席習慣，避免不必要的缺課。`;
+            } else if (rate >= threshold - 10) {
+                const sessionsNeeded = Math.ceil(diff / avgClassHours);
+                suggestion = `⚠️ 你的出席率為${rate.toFixed(1)}%，距離${threshold}%還差${diff.toFixed(2)}小時。<br>
+                <strong>建議:</strong> 至少需要再出席${sessionsNeeded}堂課程。`;
+            } else {
+                const sessionsNeeded = Math.ceil(diff / avgClassHours);
+                suggestion = `❌ 你的出席率為${rate.toFixed(1)}%，這非常危險!<br>
+                <strong>建議:</strong> 必須立即增加出席! 需要再出席至少${sessionsNeeded}堂課程。`;
+            }
+
+            document.getElementById('suggestion').innerHTML = suggestion;
+
+            const maxAbsentHours = courseData.totalHours - courseData.requiredHours;
+            const alreadyAbsent = courseData.totalHours - attendanceData.totalAttendHours;
+            const canAbsent = maxAbsentHours - alreadyAbsent;
+
+            let adviceText = `<strong>📊 缺席配額分析 (${threshold}%門檻):</strong><br>
+            • 總課程時數: ${courseData.totalHours.toFixed(2)}小時<br>
+            • ${threshold}%所需時數: ${courseData.requiredHours.toFixed(2)}小時<br>
+            • 可缺席時數: ${maxAbsentHours.toFixed(2)}小時<br>
+            • 已缺席時數: ${alreadyAbsent.toFixed(2)}小時<br>
+            • 剩餘可缺席: ${Math.max(0, canAbsent).toFixed(2)}小時`;
+
+            if (canAbsent > 0) {
+                const remainingSessions = Math.floor(canAbsent / avgClassHours);
+                adviceText += `<br><br>你還可以缺席大約${remainingSessions}堂課程。`;
+            } else {
+                adviceText += `<br><br>⚠️ 你已無剩餘缺席配額，必須出席所有課程!`;
+            }
+
+            document.getElementById('absenceAdvice').innerHTML = adviceText;
+        }
+
+        // === 出席率模擬器 ===
+        function simulateAttendance() {
+            if (!courseData || !attendanceData) {
+                alert('請先輸入出席情況');
+                return;
+            }
+
+            const absenceSessions = parseFloat(document.getElementById('simulateAbsence').value) || 0;
+            const avgHours = courseData.totalHours / Math.max(courseData.totalSessions, 1);
+            const futureAbsence = absenceSessions * avgHours;
+            const futureAttend = Math.max(0, attendanceData.totalAttendHours);
+            const futureTotal = courseData.totalHours;
+            const futureRate = (futureAttend / futureTotal) * 100;
+
+            const resultDiv = document.getElementById('simulateResult');
+            resultDiv.style.display = 'block';
+            
+            let resultClass = 'alert-success';
+            if (futureRate < customThreshold - 10) {
+                resultClass = 'alert-danger';
+            } else if (futureRate < customThreshold) {
+                resultClass = 'alert-warning';
+            }
+
+            resultDiv.innerHTML = `
+                <strong>📊 模擬結果:</strong><br>
+                如果之後再缺席 ${absenceSessions.toFixed(0)} 堂課（${futureAbsence.toFixed(2)}小時）<br>
+                預計最終出席率: <span style="color: #667eea; font-weight: 700; font-size: 1.1em;">${futureRate.toFixed(1)}%</span><br>
+                <span style="font-size: 0.9em;">${futureRate >= customThreshold ? '✅ 仍可達標' : '❌ 將無法達標'}</span>
+            `;
+        }
+
+        function showRiskBanner(type, message) {
+            const banner = document.getElementById('riskBanner');
+            banner.className = `risk-banner show ${type}`;
+            banner.textContent = message;
+            setTimeout(() => banner.classList.remove('show'), 5000);
+        }
+
+        // === 頁面初始化 ===
+        window.addEventListener('load', () => {
+            if (allCourses.length === 0) {
+                allCourses.push({
+                    courseData: null,
+                    attendanceData: null,
+                    schedules: [],
+                    punchcardEntries: [],
+                    threshold: 70
+                });
+            }
+            updateCourseNav();
+        });
+    </script>
+</body>
+</html>
